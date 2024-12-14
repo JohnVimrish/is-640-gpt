@@ -14,8 +14,6 @@ class Head(nn.Module):
         self.query = nn.Linear(const_var.n_embd, head_size, bias=False)
         self.value = nn.Linear(const_var.n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(const_var.BLOCK_SIZE, const_var.BLOCK_SIZE)))
-
-        self.value = nn.Linear(const_var.n_embd, head_size, bias=False)
         self.dropout = nn.Dropout(const_var.dropout)
 
     def forward(self, x):

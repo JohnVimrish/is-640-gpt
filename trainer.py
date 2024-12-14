@@ -4,48 +4,48 @@ import torch.nn as nn
 
 
 
-class BigramLanguageModel(nn.Module):
-    def __init__(self, data,vocab_size, const_var):
-        super().__init__()
-        # each token directly reads off the logits for the next token from a lookup table
-        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+# class BigramLanguageModel(nn.Module):
+#     def __init__(self, data,vocab_size, const_var):
+#         super().__init__()
+#         # each token directly reads off the logits for the next token from a lookup table
+#         self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
 
-    def forward(self, idx, targets=None):
+#     def forward(self, idx, targets=None):
 
-        # idx and targets are both (B,T) tensor of integers
-        logits = self.token_embedding_table(idx) # (B,T,C)
+#         # idx and targets are both (B,T) tensor of integers
+#         logits = self.token_embedding_table(idx) # (B,T,C)
 
-        if targets is None:
-            loss = None
-        else:
-            B, T, C = logits.shape
-            logits = logits.view(B*T, C)
-            targets = targets.view(B*T)
-            loss = F.cross_entropy(logits, targets)
+#         if targets is None:
+#             loss = None
+#         else:
+#             B, T, C = logits.shape
+#             logits = logits.view(B*T, C)
+#             targets = targets.view(B*T)
+#             loss = F.cross_entropy(logits, targets)
 
-        return logits, loss
+#         return logits, loss
 
-    def generate(self, idx, max_new_tokens):
-        # idx is (B, T) array of indices in the current context
-        for _ in range(max_new_tokens):
-            # get the predictions
-            logits, loss = self(idx)
-            # focus only on the last time step
-            logits = logits[:, -1, :] # becomes (B, C)
-            # apply softmax to get probabilities
-            probs = F.softmax(logits, dim=-1) # (B, C)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
-            # append sampled index to the running sequence
-            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
-        return idx
+#     def generate(self, idx, max_new_tokens):
+#         # idx is (B, T) array of indices in the current context
+#         for _ in range(max_new_tokens):
+#             # get the predictions
+#             logits, loss = self(idx)
+#             # focus only on the last time step
+#             logits = logits[:, -1, :] # becomes (B, C)
+#             # apply softmax to get probabilities
+#             probs = F.softmax(logits, dim=-1) # (B, C)
+#             # sample from the distribution
+#             idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+#             # append sampled index to the running sequence
+#             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+#         return idx
 
 
 
 class Trainer() :
-    def __init__( self,data, vocab_size,const_var) :
+    def __init__( self,data,gpt_model,const_var) :
         self.data = data
-        self.model = BigramLanguageModel(data, vocab_size,const_var)
+        self.model = gpt_model
         self.m =  self.model.to(const_var.device)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=const_var.LEARNING_RATE)
         self.const_var  = const_var
@@ -82,12 +82,12 @@ class Trainer() :
 
     def train(self,train_iterations) :
  
-        self.__init_train_val_data(self.data)
+        self.__init_train_val_data()
         for iter in range(train_iterations):
 
             # every once in a while evaluate the loss on train and val sets
             if iter % self.const_var.EVAL_INTERVAL == 0:
-                losses = self.estimate_loss()
+                losses = self.__estimate_loss()
                 print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
             # sample a batch of data
