@@ -22,7 +22,7 @@ class static_variables() :
     dropout = 0.2
 
 
-
+#this is main part 
 
 def main():
 
