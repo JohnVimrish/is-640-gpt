@@ -66,6 +66,7 @@ class Trainer() :
         x, y = x.to(self.const_var.device), y.to(self.const_var.device)
         return x, y
 
+    #This is a PyTorch decorator that disables gradient tracking during the execution of the method it decorates.
     @torch.no_grad()
     def __estimate_loss(self,):
             out = {}
