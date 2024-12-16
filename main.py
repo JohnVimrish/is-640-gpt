@@ -8,7 +8,7 @@ class static_variables() :
     BATCH_SIZE = 16 
     BLOCK_SIZE = 8 
     MAX_ITERS = 100
-    EVAL_INTERVAL = 500
+    EVAL_INTERVAL = 10
     LEARNING_RATE = 0.001
     EVAL_ITERS = 200
     RANDOM_SEED = 1337
