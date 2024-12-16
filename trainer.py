@@ -3,14 +3,21 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
+
+BATCH_SIZE = 16 
+BLOCK_SIZE = 8 
+EVAL_INTERVAL = 10
+LEARNING_RATE = 0.001
+EVAL_ITERS = 200
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
 class Trainer() :
-    def __init__( self,data,gpt_model,const_var) :
+    def __init__( self,data,gpt_model) :
         self.data = data
         self.model = gpt_model
-        self.m =  self.model.to(const_var.device)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=const_var.LEARNING_RATE)
-        self.const_var  = const_var
-
+        self.m =  self.model.to(device)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=LEARNING_RATE)
     
     def __init_train_val_data(self) :
             n = int(0.9*len(self.data)) # first 90% will be train, rest val
@@ -21,20 +28,19 @@ class Trainer() :
     def __get_batch(self,split):
         # generate a small batch of data of inputs x and targets y
         data = self.train_data if split == 'train' else self.val_data
-        ix = torch.randint(len(data) - self.const_var.BLOCK_SIZE, (self.const_var.BATCH_SIZE,))
-        x = torch.stack([data[i:i+self.const_var.BLOCK_SIZE] for i in ix])
-        y = torch.stack([data[i+1:i+self.const_var.BLOCK_SIZE+1] for i in ix])
-        x, y = x.to(self.const_var.device), y.to(self.const_var.device)
+        ix = torch.randint(len(data) - BLOCK_SIZE, (BATCH_SIZE,))
+        x = torch.stack([data[i:i+BLOCK_SIZE] for i in ix])
+        y = torch.stack([data[i+1:i+BLOCK_SIZE+1] for i in ix])
+        x, y = x.to(device), y.to(device)
         return x, y
 
-    #This is a PyTorch decorator that disables gradient tracking during the execution of the method it decorates.
     @torch.no_grad()
     def __estimate_loss(self,):
             out = {}
             self.model.eval()
             for split in ['train', 'val']:
-                losses = torch.zeros(self.const_var.EVAL_ITERS)
-                for k in range(self.const_var.EVAL_ITERS):
+                losses = torch.zeros(EVAL_ITERS)
+                for k in range(EVAL_ITERS):
                     X, Y = self.__get_batch(split)
                     logits, loss = self.model(X, Y)
                     losses[k] = loss.item()
@@ -48,19 +54,20 @@ class Trainer() :
         for iter in range(train_iterations):
 
             # every once in a while evaluate the loss on train and val sets
-            if iter % self.const_var.EVAL_INTERVAL == 0:
+            if iter % EVAL_INTERVAL == 0:
                 losses = self.__estimate_loss()
-                print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+                # print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
             # sample a batch of data
             xb, yb = self.__get_batch('train')
-
             # evaluate the loss
             logits, loss = self.model(xb, yb)
             self.optimizer.zero_grad(set_to_none=True)
             loss.backward()
             self.optimizer.step()
+        
+        print(f"Final train loss {losses['train']:.4f}, Final val loss {losses['val']:.4f}")
 
         # generate from the model
-        return  torch.zeros((1, 1), dtype=torch.long, device=self.const_var.device)
+        return  torch.zeros((1, 1), dtype=torch.long, device=device)
 
