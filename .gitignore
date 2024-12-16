@@ -2,3 +2,5 @@
 /input.txt
 /more.txt
 /test.py 
+
+#Excludes `__pycache__` and specific root files from Git tracking.
